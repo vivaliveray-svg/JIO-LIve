@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JIO Live</title>
+  <style>
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    :root{
+      --bg:#0a0a0a;--bg2:#111;--bg3:#1a1a1a;
+      --surface:#1e1e1e;--border:#222;--border2:#333;
+      --text:#f0f0f0;--muted:#888;
+      --purple:#7b2fff;--pink:#e040fb;
+      --grad:linear-gradient(135deg,#7b2fff,#e040fb);
+    }
+    body{font-family:Arial,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+    .page{display:none;padding-bottom:70px}
+    .page.active{display:block}
+
+    /* AUTH */
+    #page-auth{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:30px 20px}
+    .auth-logo{font-size:46px;font-weight:900;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:6px}
+    .auth-tagline{color:var(--muted);font-size:14px;margin-bottom:32px}
+    .auth-box{width:100%;max-width:360px;background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:28px 24px}
+    .auth-tabs{display:flex;background:var(--bg3);border-radius:10px;padding:4px;margin-bottom:22px}
+    .auth-tab{flex:1;padding:9px;border-radius:8px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;border:none;background:none}
+    .auth-tab.active{background:var(--surface);color:var(--text)}
+    .field{margin-bottom:14px;text-align:left}
+    .field label{display:block;font-size:11px;color:var(--muted);font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px}
+    .field input{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:12px 14px;color:var(--text);font-size:14px;outline:none}
+    .field input:focus{border-color:var(--purple)}
+    .btn-main{width:100%;padding:13px;background:var(--grad);color:white;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;margin-top:6px}
+    .or-line{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12px;margin:16px 0}
+    .or-line::before,.or-line::after{content:'';flex:1;height:1px;background:var(--border)}
+    .btn-guest{width:100%;padding:12px;background:transparent;color:var(--muted);border:1px solid var(--border2);border-radius:12px;font-size:13px;cursor:pointer}
+    .error-msg{color:#ff4444;font-size:12px;text-align:center;margin-top:10px;display:none}
+    .success-msg{color:#00e676;font-size:12px;text-align:center;margin-top:10px;display:none}
+
+    /* HEADER */
+    .header{position:sticky;top:0;z-index:200;background:rgba(10,10,10,.95);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:14px 18px;display:flex;align-items:center;justify-content:space-between}
+    .logo{font-size:22px;font-weight:900;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .header-right{display:flex;gap:16px;font-size:22px;cursor:pointer}
+
+    /* STORIES */
+    .stories{display:flex;gap:14px;padding:14px;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid var(--border)}
+    .stories::-webkit-scrollbar{display:none}
+    .story{display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;flex-shrink:0}
+    .story-ring{width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#f58529,#dd2a7b,#8134af);padding:2.5px}
+    .story-ring.add-ring{background:var(--surface)}
+    .story-inner{width:100%;height:100%;border-radius:50%;background:var(--bg3);border:2.5px solid var(--bg);display:flex;align-items:center;justify-content:center;font-size:22px;overflow:hidden}
+    .story-inner img{width:100%;height:100%;object-fit:cover}
+    .story-name{font-size:11px;color:var(--muted);max-width:64px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+    /* POSTS */
+    .post{border-bottom:1px solid var(--border)}
+    .post-head{display:flex;align-items:center;justify-content:space-between;padding:12px 14px}
+    .post-user{display:flex;align-items:center;gap:10px}
+    .post-av{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#f58529,#dd2a7b,#8134af);padding:2px;flex-shrink:0}
+    .post-av-in{width:100%;height:100%;border-radius:50%;background:var(--bg3);border:2px solid var(--bg);display:flex;align-items:center;justify-content:center;font-size:16px;overflow:hidden}
+    .post-av-in img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+    .post-uname{font-size:13px;font-weight:600}
+    .post-loc{font-size:11px;color:var(--muted)}
+    .post-img{width:100%;aspect-ratio:1/1;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:80px;overflow:hidden}
+    .post-img img{width:100%;height:100%;object-fit:cover}
+    .post-actions{display:flex;align-items:center;gap:14px;padding:10px 14px 6px}
+    .act{background:none;border:none;color:var(--text);font-size:24px;cursor:pointer}
+    .spacer{flex:1}
+    .post-likes{font-size:13px;font-weight:600;padding:4px 14px}
+    .post-cap{font-size:13px;padding:4px 14px 12px;color:#ddd;line-height:1.5}
+    .post-cap b{color:white}
+    .post-time{font-size:10px;color:var(--muted);padding:0 14px 12px;display:block}
+
+    /* EMPTY FEED */
+    .empty-feed{text-align:center;padding:60px 20px;color:var(--muted)}
+    .empty-feed .big{font-size:60px;margin-bottom:16px}
+    .empty-feed p{font-size:14px;line-height:1.6}
+
+    /* REELS */
+    #page-reels{padding-bottom:0}
+    .reels-wrap{height:calc(100vh - 56px);overflow-y:scroll;scroll-snap-type:y mandatory;scrollbar-width:none}
+    .reels-wrap::-webkit-scrollbar{display:none}
+    .reel{height:calc(100vh - 56px);scroll-snap-align:start;position:relative;background:#000;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:110px}
+    .reel-ov{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.8) 0%,transparent 50%)}
+    .reel-side{position:absolute;right:14px;bottom:100px;display:flex;flex-direction:column;align-items:center;gap:22px}
+    .reel-btn{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;font-size:28px}
+    .reel-btn span{font-size:11px;color:white;font-weight:600}
+    .reel-info{position:absolute;left:14px;bottom:90px;right:70px;text-align:left}
+    .reel-user{font-size:14px;font-weight:700;color:white;margin-bottom:6px}
+    .reel-cap{font-size:13px;color:rgba(255,255,255,.9);line-height:1.5}
+
+    /* PROFILE */
+    .prof-top{display:flex;align-items:center;gap:24px;padding:20px 18px 16px}
+    .prof-pic-wrap{position:relative;flex-shrink:0}
+    .prof-pic{width:86px;height:86px;border-radius:50%;background:var(--grad);padding:3px;cursor:pointer}
+    .prof-pic-in{width:100%;height:100%;border-radius:50%;background:var(--bg3);border:3px solid var(--bg);display:flex;align-items:center;justify-content:center;font-size:38px;overflow:hidden}
+    .prof-pic-in img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+    .prof-edit-badge{position:absolute;bottom:0;right:0;width:26px;height:26px;background:var(--grad);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;border:2px solid var(--bg);cursor:pointer}
+    .prof-stats{flex:1;display:flex;justify-content:space-around}
+    .stat{text-align:center}
+    .stat-n{font-size:18px;font-weight:700;display:block}
+    .stat-l{font-size:11px;color:var(--muted)}
+    .prof-info{padding:0 18px 14px;text-align:left}
+    .prof-name{font-size:15px;font-weight:700;margin-bottom:4px}
+    .prof-email{font-size:12px;color:var(--muted);margin-bottom:4px}
+    .prof-bio{font-size:13px;color:#aaa;line-height:1.5}
+    .prof-btns{display:flex;gap:10px;padding:0 18px 16px}
+    .btn-edit{flex:1;padding:9px;background:var(--surface);border:1px solid var(--border2);border-radius:9px;color:var(--text);font-size:13px;font-weight:600;cursor:pointer}
+    .btn-logout{flex:0;padding:9px 14px;background:transparent;border:1px solid #ff4444;border-radius:9px;color:#ff4444;font-size:13px;font-weight:600;cursor:pointer}
+    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px}
+    .grid-item{aspect-ratio:1/1;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:36px;cursor:pointer;overflow:hidden}
+    .grid-item img{width:100%;height:100%;object-fit:cover}
+
+    /* NEW POST BTN */
+    .new-post-fab{position:fixed;bottom:80px;right:20px;width:56px;height:56px;background:var(--grad);border-radius:50%;display:none;align-items:center;justify-content:center;font-size:28px;cursor:pointer;box-shadow:0 4px 20px rgba(123,47,255,.5);z-index:400;border:none;color:white}
+    .new-post-fab.show{display:flex}
+
+    /* MODALS */
+    .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:500;align-items:flex-end;justify-content:center}
+    .modal-overlay.open{display:flex}
+    .modal{background:var(--bg2);border-radius:20px 20px 0 0;border-top:1px solid var(--border2);width:100%;max-width:430px;padding:24px 20px 40px;max-height:90vh;overflow-y:auto}
+    .modal-title{font-size:17px;font-weight:700;text-align:center;margin-bottom:20px}
+    .modal-avatar{display:flex;flex-direction:column;align-items:center;margin-bottom:20px;cursor:pointer}
+    .modal-avatar-img{width:80px;height:80px;border-radius:50%;background:var(--grad);padding:3px;margin-bottom:8px}
+    .modal-avatar-inner{width:100%;height:100%;border-radius:50%;background:var(--bg3);border:3px solid var(--bg);display:flex;align-items:center;justify-content:center;font-size:34px;overflow:hidden}
+    .modal-avatar-inner img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+    .modal-avatar-lbl{font-size:13px;color:var(--purple);font-weight:600}
+    .mfield{margin-bottom:14px}
+    .mfield label{display:block;font-size:11px;color:var(--muted);font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px}
+    .mfield input,.mfield textarea{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:12px 14px;color:var(--text);font-size:14px;outline:none;font-family:Arial,sans-serif}
+    .mfield textarea{resize:none;height:80px}
+    .mfield input:focus,.mfield textarea:focus{border-color:var(--purple)}
+    .upload-progress{height:4px;background:var(--border2);border-radius:2px;margin-top:8px;overflow:hidden;display:none}
+    .upload-bar{height:100%;background:var(--grad);width:0%;transition:width .3s;border-radius:2px}
+    .btn-save{width:100%;padding:13px;background:var(--grad);color:white;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px}
+    .btn-cancel{width:100%;padding:11px;background:transparent;color:var(--muted);border:1px solid var(--border2);border-radius:12px;font-size:13px;cursor:pointer;margin-top:8px}
+
+    /* POST PREVIEW */
+    .post-preview{width:100%;aspect-ratio:1/1;background:var(--bg3);border-radius:12px;margin-bottom:14px;display:flex;align-items:center;justify-content:center;font-size:40px;color:var(--muted);cursor:pointer;overflow:hidden;border:2px dashed var(--border2)}
+    .post-preview img{width:100%;height:100%;object-fit:cover;border-radius:10px}
+    .post-preview.has-img{border:none}
+
+    /* BOTTOM NAV */
+    .bnav{position:fixed;bottom:0;left:0;right:0;height:64px;background:rgba(10,10,10,.95);backdrop-filter:blur(20px);border-top:1px solid var(--border);display:none;justify-content:space-around;align-items:center;z-index:300}
+    .bnav.show{display:flex}
+    .nitem{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:8px 20px}
+    .nico{font-size:24px;filter:grayscale(1) opacity(.5);transition:filter .2s}
+    .nlbl{font-size:10px;color:var(--muted);transition:color .2s}
+    .nitem.active .nico{filter:none}
+    .nitem.active .nlbl{color:var(--text)}
+
+    /* LOADING */
+    .loading{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;z-index:999}
+    .spinner{width:40px;height:40px;border:3px solid var(--border2);border-top-color:var(--pink);border-radius:50%;animation:spin .8s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* TOAST */
+    .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--border2);color:var(--text);padding:10px 20px;border-radius:10px;font-size:13px;font-weight:500;z-index:999;opacity:0;pointer-events:none;transition:opacity .3s;white-space:nowrap}
+    .toast.show{opacity:1}
+  </style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div class="loading" id="loading">
+  <div style="font-size:40px;font-weight:900;background:linear-gradient(135deg,#7b2fff,#e040fb);-webkit-background-clip:text;-webkit-text-fill-color:transparent">JIO Live</div>
+  <div class="spinner"></div>
+</div>
+
+<!-- AUTH -->
+<div id="page-auth" style="display:none">
+  <div class="auth-logo">JIO Live 🎬</div>
+  <div class="auth-tagline">India's own social platform</div>
+  <div class="auth-box">
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tab-login" onclick="switchTab('login')">Sign In</button>
+      <button class="auth-tab" id="tab-signup" onclick="switchTab('signup')">Sign Up</button>
+    </div>
+    <div id="login-form">
+      <div class="field"><label>Email</label><input type="email" id="login-email" placeholder="your@email.com"></div>
+      <div class="field"><label>Password</label><input type="password" id="login-pass" placeholder="••••••••"></div>
+      <button class="btn-main" onclick="doLogin()">Sign In →</button>
+      <div class="error-msg" id="login-err"></div>
+      <div class="or-line">or</div>
+      <button class="btn-guest" onclick="doGuest()">Continue as Guest</button>
+    </div>
+    <div id="signup-form" style="display:none">
+      <div class="field"><label>Full Name</label><input type="text" id="signup-name" placeholder="Your name"></div>
+      <div class="field"><label>Email</label><input type="email" id="signup-email" placeholder="your@email.com"></div>
+      <div class="field"><label>Password</label><input type="password" id="signup-pass" placeholder="Min 6 characters"></div>
+      <button class="btn-main" onclick="doSignup()">Create Account →</button>
+      <div class="error-msg" id="signup-err"></div>
+      <div class="success-msg" id="signup-ok"></div>
+    </div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<div class="header" id="main-header" style="display:none">
+  <div class="logo">JIO Live 🎬</div>
+  <div class="header-right">
+    <span onclick="showToast('🔔 No notifications')">🔔</span>
+    <span onclick="openNewPost()">➕</span>
+  </div>
+</div>
+
+<!-- HOME -->
+<div class="page" id="page-home">
+  <div class="stories">
+    <div class="story" onclick="openNewPost()">
+      <div class="story-ring add-ring"><div class="story-inner">➕</div></div>
+      <span class="story-name">New Post</span>
+    </div>
+    <div class="story" onclick="showToast('📖 Story!')"><div class="story-ring"><div class="story-inner">🌸</div></div><span class="story-name">priya_s</span></div>
+    <div class="story" onclick="showToast('📖 Story!')"><div class="story-ring"><div class="story-inner">🌊</div></div><span class="story-name">arjun.v</span></div>
+    <div class="story" onclick="showToast('📖 Story!')"><div class="story-ring"><div class="story-inner">🎨</div></div><span class="story-name">meera</span></div>
+  </div>
+  <div id="posts-loading" style="text-align:center;padding:30px;color:#888">Loading posts... ⏳</div>
+  <div id="posts"></div>
+</div>
+
+<!-- REELS -->
+<div class="page" id="page-reels" style="padding-bottom:0">
+  <div class="reels-wrap" id="reels-wrap"></div>
+</div>
+
+<!-- PROFILE -->
+<div class="page" id="page-profile">
+  <div class="prof-top">
+    <div class="prof-pic-wrap">
+      <div class="prof-pic" onclick="openEditProfile()">
+        <div class="prof-pic-in" id="prof-avatar-display">😊</div>
+      </div>
+      <div class="prof-edit-badge" onclick="openEditProfile()">✏️</div>
+    </div>
+    <div class="prof-stats">
+      <div class="stat"><span class="stat-n" id="prof-post-count">0</span><span class="stat-l">Posts</span></div>
+      <div class="stat"><span class="stat-n">0</span><span class="stat-l">Followers</span></div>
+      <div class="stat"><span class="stat-n">0</span><span class="stat-l">Following</span></div>
+    </div>
+  </div>
+  <div class="prof-info">
+    <div class="prof-name" id="prof-name-display">Your Name</div>
+    <div class="prof-email" id="prof-email-display"></div>
+    <div class="prof-bio" id="prof-bio-display">✨ JIO Live Creator · 📍 India</div>
+  </div>
+  <div class="prof-btns">
+    <button class="btn-edit" onclick="openEditProfile()">✏️ Edit Profile</button>
+    <button class="btn-logout" onclick="doLogout()">Logout</button>
+  </div>
+  <div class="grid" id="grid"></div>
+</div>
+
+<!-- NEW POST MODAL -->
+<div class="modal-overlay" id="new-post-modal">
+  <div class="modal">
+    <div class="modal-title">📸 New Post</div>
+    <div class="post-preview" id="post-preview" onclick="document.getElementById('post-img-input').click()">
+      <div>📷<br><span style="font-size:14px;margin-top:8px;display:block">Tap to select photo</span></div>
+    </div>
+    <input type="file" id="post-img-input" accept="image/*" style="display:none" onchange="previewPostImage(this)">
+    <div class="upload-progress" id="post-upload-progress"><div class="upload-bar" id="post-upload-bar"></div></div>
+    <div class="mfield">
+      <label>Caption</label>
+      <textarea id="post-caption" placeholder="Write a caption..."></textarea>
+    </div>
+    <div class="mfield">
+      <label>Location (optional)</label>
+      <input type="text" id="post-location" placeholder="Add location...">
+    </div>
+    <button class="btn-save" id="post-submit-btn" onclick="submitPost()">🚀 Share Post</button>
+    <button class="btn-cancel" onclick="closeNewPost()">Cancel</button>
+  </div>
+</div>
+
+<!-- EDIT PROFILE MODAL -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal">
+    <div class="modal-title">Edit Profile</div>
+    <div class="modal-avatar" onclick="document.getElementById('avatar-input').click()">
+      <div class="modal-avatar-img">
+        <div class="modal-avatar-inner" id="modal-avatar-preview">😊</div>
+      </div>
+      <div class="modal-avatar-lbl">📷 Change Photo</div>
+      <div class="upload-progress" id="upload-progress"><div class="upload-bar" id="upload-bar"></div></div>
+    </div>
+    <input type="file" id="avatar-input" accept="image/*" style="display:none" onchange="uploadAvatar(this)">
+    <div class="mfield"><label>Full Name</label><input type="text" id="edit-name" placeholder="Your name"></div>
+    <div class="mfield"><label>Bio</label><textarea id="edit-bio" placeholder="Tell the world about yourself..."></textarea></div>
+    <div class="mfield"><label>Location</label><input type="text" id="edit-location" placeholder="City, Country"></div>
+    <button class="btn-save" onclick="saveProfile()">💾 Save Profile</button>
+    <button class="btn-cancel" onclick="closeEditProfile()">Cancel</button>
+  </div>
+</div>
+
+<!-- FAB -->
+<button class="new-post-fab" id="new-post-fab" onclick="openNewPost()">➕</button>
+
+<!-- BOTTOM NAV -->
+<nav class="bnav" id="bnav">
+  <div class="nitem active" id="nav-home" onclick="goTo('home')"><div class="nico">🏠</div><div class="nlbl">Home</div></div>
+  <div class="nitem" id="nav-reels" onclick="goTo('reels')"><div class="nico">▶️</div><div class="nlbl">Reels</div></div>
+  <div class="nitem" id="nav-profile" onclick="goTo('profile')"><div class="nico">👤</div><div class="nlbl">Profile</div></div>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { getFirestore, doc, setDoc, getDoc, collection, addDoc, getDocs, query, orderBy, serverTimestamp, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCmeh7GV7vtn76LyrV2NYWzBf9GJwGT9D8",
+    authDomain: "jio-live-1bdbb.firebaseapp.com",
+    projectId: "jio-live-1bdbb",
+    storageBucket: "jio-live-1bdbb.firebasestorage.app",
+    messagingSenderId: "481946409372",
+    appId: "1:481946409372:web:c22411ccf51883af825059"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  const CLOUD_NAME = "dynrnfcfv";
+  const UPLOAD_PRESET = "jio-live-upload";
+
+  let currentUser = null;
+  let currentAvatarUrl = null;
+  let selectedPostImageUrl = null;
+
+  /* AUTH STATE */
+  onAuthStateChanged(auth, async (user) => {
+    document.getElementById('loading').style.display = 'none';
+    if (user) {
+      currentUser = user;
+      await loadAndShowApp(user);
+    } else {
+      document.getElementById('page-auth').style.display = 'flex';
+    }
+  });
+
+  async function loadAndShowApp(user) {
+    document.getElementById('page-auth').style.display = 'none';
+    document.getElementById('main-header').style.display = 'flex';
+    document.getElementById('bnav').classList.add('show');
+    document.getElementById('new-post-fab').classList.add('show');
+    renderReels();
+    await loadPosts();
+    await loadUserProfile(user);
+    goTo('home');
+  }
+
+  async function loadUserProfile(user) {
+    try {
+      const snap = await getDoc(doc(db, 'users', user.uid));
+      if (snap.exists()) {
+        updateProfileUI(snap.data());
+      } else {
+        updateProfileUI({ name: user.displayName || 'JIO Live User', email: user.email || '', bio: '✨ JIO Live Creator · 📍 India', avatarUrl: null });
+      }
+    } catch(e) {
+      updateProfileUI({ name: user.displayName || 'JIO Live User', email: user.email || '', bio: '✨ JIO Live Creator', avatarUrl: null });
+    }
+  }
+
+  function updateProfileUI(data) {
+    document.getElementById('prof-name-display').textContent = data.name || 'Your Name';
+    document.getElementById('prof-email-display').textContent = data.email || '';
+    document.getElementById('prof-bio-display').textContent = data.bio || '✨ JIO Live Creator';
+    currentAvatarUrl = data.avatarUrl || null;
+    const avatarEl = document.getElementById('prof-avatar-display');
+    if (data.avatarUrl) {
+      avatarEl.innerHTML = `<img src="${data.avatarUrl}" alt="avatar">`;
+    } else {
+      avatarEl.textContent = '😊';
+    }
+  }
+
+  /* LOAD POSTS FROM FIRESTORE */
+  async function loadPosts() {
+    document.getElementById('posts-loading').style.display = 'block';
+    try {
+      const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'));
+      const snapshot = await getDocs(q);
+      document.getElementById('posts-loading').style.display = 'none';
+
+      if (snapshot.empty) {
+        document.getElementById('posts').innerHTML = `
+          <div class="empty-feed">
+            <div class="big">📸</div>
+            <p>No posts yet!<br>Be the first to share something.</p>
+          </div>`;
+        return;
+      }
+
+      let html = '';
+      snapshot.forEach(docSnap => {
+        const p = docSnap.data();
+        const id = docSnap.id;
+        const timeAgo = getTimeAgo(p.createdAt?.toDate());
+        html += `
+          <div class="post">
+            <div class="post-head">
+              <div class="post-user">
+                <div class="post-av">
+                  <div class="post-av-in">
+                    ${p.authorAvatar ? `<img src="${p.authorAvatar}" alt="">` : '😊'}
+                  </div>
+                </div>
+                <div>
+                  <div class="post-uname">${p.authorName || 'User'}</div>
+                  <div class="post-loc">${p.location || ''}</div>
+                </div>
+              </div>
+              <span style="cursor:pointer;color:#888;font-size:20px" onclick="showToast('⋯ Options')">•••</span>
+            </div>
+            <div class="post-img">
+              <img src="${p.imageUrl}" alt="post" loading="lazy">
+            </div>
+            <div class="post-actions">
+              <button class="act" id="like-${id}" onclick="likePost('${id}', this)">🤍</button>
+              <button class="act" onclick="showToast('💬 Comments coming soon!')">💬</button>
+              <button class="act" onclick="showToast('📤 Shared!')">📤</button>
+              <div class="spacer"></div>
+              <button class="act" onclick="showToast('🔖 Saved!')">🔖</button>
+            </div>
+            <div class="post-likes" id="likes-${id}">${p.likes || 0} likes</div>
+            <div class="post-cap"><b>${p.authorName || 'User'}</b> ${p.caption || ''}</div>
+            <span class="post-time">${timeAgo}</span>
+          </div>`;
+      });
+      document.getElementById('posts').innerHTML = html;
+
+      // Load profile grid
+      await loadProfileGrid();
+    } catch(e) {
+      document.getElementById('posts-loading').style.display = 'none';
+      document.getElementById('posts').innerHTML = `<div class="empty-feed"><div class="big">😕</div><p>Could not load posts.<br>Check your connection.</p></div>`;
+    }
+  }
+
+  async function loadProfileGrid() {
+    if (!currentUser) return;
+    try {
+      const q = query(collection(db, 'posts'), where('authorId', '==', currentUser.uid), orderBy('createdAt', 'desc'));
+      const snap = await getDocs(q);
+      document.getElementById('prof-post-count').textContent = snap.size;
+      let gridHtml = '';
+      snap.forEach(d => {
+        gridHtml += `<div class="grid-item"><img src="${d.data().imageUrl}" alt="" loading="lazy"></div>`;
+      });
+      if (gridHtml) document.getElementById('grid').innerHTML = gridHtml;
+    } catch(e) {}
+  }
+
+  /* NEW POST */
+  window.openNewPost = function() {
+    if (!currentUser) { showToast('⚠️ Please login to post'); return; }
+    selectedPostImageUrl = null;
+    document.getElementById('post-preview').innerHTML = '<div>📷<br><span style="font-size:14px;margin-top:8px;display:block">Tap to select photo</span></div>';
+    document.getElementById('post-preview').classList.remove('has-img');
+    document.getElementById('post-caption').value = '';
+    document.getElementById('post-location').value = '';
+    document.getElementById('new-post-modal').classList.add('open');
+  }
+
+  window.closeNewPost = function() {
+    document.getElementById('new-post-modal').classList.remove('open');
+  }
+
+  window.previewPostImage = function(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      document.getElementById('post-preview').innerHTML = `<img src="${e.target.result}" alt="preview">`;
+      document.getElementById('post-preview').classList.add('has-img');
+    };
+    reader.readAsDataURL(file);
+  }
+
+  window.submitPost = async function() {
+    const file = document.getElementById('post-img-input').files[0];
+    const caption = document.getElementById('post-caption').value.trim();
+    const location = document.getElementById('post-location').value.trim();
+
+    if (!file) { showToast('⚠️ Please select a photo'); return; }
+
+    const btn = document.getElementById('post-submit-btn');
+    btn.textContent = 'Uploading... ⏳';
+    btn.disabled = true;
+
+    const progress = document.getElementById('post-upload-progress');
+    const bar = document.getElementById('post-upload-bar');
+    progress.style.display = 'block';
+    bar.style.width = '30%';
+
+    try {
+      // Upload to Cloudinary
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', UPLOAD_PRESET);
+      formData.append('folder', 'jio-live-posts');
+
+      bar.style.width = '60%';
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, { method:'POST', body:formData });
+      const data = await res.json();
+      bar.style.width = '90%';
+
+      // Save to Firestore
+      const userSnap = await getDoc(doc(db, 'users', currentUser.uid));
+      const userData = userSnap.exists() ? userSnap.data() : {};
+
+      await addDoc(collection(db, 'posts'), {
+        imageUrl: data.secure_url,
+        caption: caption || '',
+        location: location || '',
+        authorId: currentUser.uid,
+        authorName: userData.name || currentUser.displayName || 'User',
+        authorAvatar: userData.avatarUrl || null,
+        likes: 0,
+        createdAt: serverTimestamp()
+      });
+
+      bar.style.width = '100%';
+      showToast('🎉 Post shared successfully!');
+      closeNewPost();
+
+      setTimeout(async () => {
+        progress.style.display = 'none';
+        bar.style.width = '0%';
+        await loadPosts();
+      }, 500);
+
+    } catch(e) {
+      showToast('❌ Failed to post: ' + e.message);
+    }
+
+    btn.textContent = '🚀 Share Post';
+    btn.disabled = false;
+  }
+
+  /* LIKE POST */
+  window.likePost = function(id, btn) {
+    const isLiked = btn.textContent === '❤️';
+    btn.textContent = isLiked ? '🤍' : '❤️';
+    const likesEl = document.getElementById('likes-'+id);
+    const current = parseInt(likesEl.textContent) || 0;
+    likesEl.textContent = (isLiked ? current-1 : current+1) + ' likes';
+    showToast(isLiked ? 'Like removed' : '❤️ Liked!');
+  }
+
+  /* UPLOAD AVATAR */
+  window.uploadAvatar = async function(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const progress = document.getElementById('upload-progress');
+    const bar = document.getElementById('upload-bar');
+    progress.style.display = 'block';
+    bar.style.width = '30%';
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', UPLOAD_PRESET);
+    formData.append('folder', 'jio-live-avatars');
+    try {
+      bar.style.width = '60%';
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, { method:'POST', body:formData });
+      const data = await res.json();
+      bar.style.width = '100%';
+      currentAvatarUrl = data.secure_url;
+      document.getElementById('modal-avatar-preview').innerHTML = `<img src="${currentAvatarUrl}" alt="avatar">`;
+      showToast('✅ Photo uploaded!');
+      setTimeout(() => { progress.style.display='none'; bar.style.width='0%'; }, 800);
+    } catch(e) {
+      showToast('❌ Upload failed');
+      progress.style.display = 'none';
+    }
+  }
+
+  /* SAVE PROFILE */
+  window.openEditProfile = function() {
+    if (!currentUser) { showToast('⚠️ Login required'); return; }
+    document.getElementById('edit-name').value = document.getElementById('prof-name-display').textContent;
+    document.getElementById('edit-bio').value = document.getElementById('prof-bio-display').textContent;
+    const modalPreview = document.getElementById('modal-avatar-preview');
+    if (currentAvatarUrl) { modalPreview.innerHTML = `<img src="${currentAvatarUrl}" alt="avatar">`; }
+    else { modalPreview.textContent = '😊'; }
+    document.getElementById('edit-modal').classList.add('open');
+  }
+
+  window.closeEditProfile = function() { document.getElementById('edit-modal').classList.remove('open'); }
+
+  window.saveProfile = async function() {
+    if (!currentUser) return;
+    const name = document.getElementById('edit-name').value.trim();
+    const bio  = document.getElementById('edit-bio').value.trim();
+    if (!name) { showToast('⚠️ Name required'); return; }
+    const btn = document.querySelector('#edit-modal .btn-save');
+    btn.textContent = 'Saving...'; btn.disabled = true;
+    try {
+      const profileData = { name, bio: bio||'✨ JIO Live Creator', email: currentUser.email||'', avatarUrl: currentAvatarUrl||null, updatedAt: new Date().toISOString() };
+      await setDoc(doc(db,'users',currentUser.uid), profileData, { merge:true });
+      await updateProfile(currentUser, { displayName:name, photoURL:currentAvatarUrl||'' });
+      updateProfileUI(profileData);
+      closeEditProfile();
+      showToast('✅ Profile saved!');
+    } catch(e) { showToast('❌ Save failed'); }
+    btn.textContent = '💾 Save Profile'; btn.disabled = false;
+  }
+
+  /* LOGOUT */
+  window.doLogin = async function() {
+    const email = document.getElementById('login-email').value.trim();
+    const pass  = document.getElementById('login-pass').value;
+    const err   = document.getElementById('login-err');
+    err.style.display = 'none';
+    if (!email||!pass) { showErr(err,'⚠️ Please fill all fields'); return; }
+    try { await signInWithEmailAndPassword(auth,email,pass); }
+    catch(e) { showErr(err,'❌ Wrong email or password'); }
+  }
+
+  window.doSignup = async function() {
+    const name  = document.getElementById('signup-name').value.trim();
+    const email = document.getElementById('signup-email').value.trim();
+    const pass  = document.getElementById('signup-pass').value;
+    const err   = document.getElementById('signup-err');
+    const ok    = document.getElementById('signup-ok');
+    err.style.display='none'; ok.style.display='none';
+    if (!name||!email||!pass) { showErr(err,'⚠️ Please fill all fields'); return; }
+    if (pass.length<6) { showErr(err,'⚠️ Password min 6 characters'); return; }
+    try {
+      const cred = await createUserWithEmailAndPassword(auth,email,pass);
+      await updateProfile(cred.user,{displayName:name});
+      await setDoc(doc(db,'users',cred.user.uid),{name,email,bio:'✨ JIO Live Creator · 📍 India',avatarUrl:null,createdAt:new Date().toISOString()});
+      ok.textContent='✅ Account created! Logging in...'; ok.style.display='block';
+    } catch(e) {
+      if (e.code==='auth/email-already-in-use') showErr(err,'❌ Email already registered');
+      else showErr(err,'❌ '+e.message);
+    }
+  }
+
+  window.doGuest = function() {
+    document.getElementById('page-auth').style.display='none';
+    document.getElementById('main-header').style.display='flex';
+    document.getElementById('bnav').classList.add('show');
+    document.getElementById('new-post-fab').classList.add('show');
+    updateProfileUI({name:'Guest User',email:'Browsing as guest',bio:'👀 Just exploring!',avatarUrl:null});
+    renderReels(); loadPosts();
+    goTo('home');
+  }
+
+  window.doLogout = async function() {
+    await signOut(auth);
+    document.getElementById('main-header').style.display='none';
+    document.getElementById('bnav').classList.remove('show');
+    document.getElementById('new-post-fab').classList.remove('show');
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    document.getElementById('page-auth').style.display='flex';
+    showToast('👋 Logged out!');
+  }
+
+  /* REELS */
+  function renderReels() {
+    const reels = [
+      {user:'arjun.v',emoji:'🌊',bg:'🏄',likes:'124K',caption:'Perfect wave 🏄'},
+      {user:'meera',emoji:'🎨',bg:'🌆',likes:'89K',caption:'City at 3am 🌆'},
+      {user:'rk_live',emoji:'🏔️',bg:'🌅',likes:'76K',caption:'Bali sunset ☀️'},
+      {user:'foodie',emoji:'🍜',bg:'🍕',likes:'211K',caption:'Secret recipe 🍕'},
+    ];
+    document.getElementById('reels-wrap').innerHTML = reels.map(r=>`
+      <div class="reel" ondblclick="showToast('❤️ Liked!')">
+        <div>${r.bg}</div>
+        <div class="reel-ov"></div>
+        <div class="reel-side">
+          <div style="font-size:40px">${r.emoji}</div>
+          <div class="reel-btn" onclick="showToast('❤️ Liked!')"><span>🤍</span><span>${r.likes}</span></div>
+          <div class="reel-btn" onclick="showToast('💬 Comments!')"><span>💬</span><span>Comment</span></div>
+          <div class="reel-btn" onclick="showToast('📤 Shared!')"><span>📤</span><span>Share</span></div>
+        </div>
+        <div class="reel-info">
+          <div class="reel-user">@${r.user}</div>
+          <div class="reel-cap">${r.caption}</div>
+        </div>
+      </div>`).join('');
+  }
+
+  /* HELPERS */
+  function getTimeAgo(date) {
+    if (!date) return '';
+    const seconds = Math.floor((new Date() - date) / 1000);
+    if (seconds < 60) return 'Just now';
+    if (seconds < 3600) return Math.floor(seconds/60) + ' minutes ago';
+    if (seconds < 86400) return Math.floor(seconds/3600) + ' hours ago';
+    return Math.floor(seconds/86400) + ' days ago';
+  }
+
+  window.switchTab = function(t) {
+    document.getElementById('tab-login').classList.toggle('active',t==='login');
+    document.getElementById('tab-signup').classList.toggle('active',t==='signup');
+    document.getElementById('login-form').style.display=t==='login'?'block':'none';
+    document.getElementById('signup-form').style.display=t==='signup'?'block':'none';
+  }
+
+  window.goTo = function(id) {
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    document.querySelectorAll('.nitem').forEach(n=>n.classList.remove('active'));
+    document.getElementById('page-'+id).classList.add('active');
+    document.getElementById('nav-'+id).classList.add('active');
+  }
+
+  let toastTimer;
+  window.showToast = function(msg) {
+    const t=document.getElementById('toast');
+    t.textContent=msg; t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer=setTimeout(()=>t.classList.remove('show'),2200);
+  }
+
+  function showErr(el,msg){el.textContent=msg;el.style.display='block';}
+</script>
+</body>
+</html>
