@@ -8,7 +8,7 @@
 <meta property="og:title" content="JIO Live">
 <meta property="og:type" content="website">
 <meta name="theme-color" content="#000000">
-<link rel="manifest" href="./manifest.json">
+<link rel="manifest" href="/manifest.json">
 <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -928,7 +928,7 @@ async function loadDMs(){
       const otherId=c.user1===ME.uid?c.user2:c.user1;
       const od=await safeGet('users',otherId)||{};
       const avEl=od.avatarUrl?`<img src="${od.avatarUrl}">`:'😊';
-      html+=`<div class="conv-item" onclick="window.openChat('${cid}','${otherId}')">
+      html+=`<div class="conv-item" onclick="startDM('${otherId}')">
         <div class="conv-av">${avEl}</div>
         <div class="conv-info"><div class="conv-name">${od.name||'User'}</div><div class="conv-preview">${c.lastMsg||'Start a conversation…'}</div></div>
         <div class="conv-time">${ago(c.updatedAt?.toDate())}</div>
